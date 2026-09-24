@@ -5,3 +5,4 @@ __pycache__/
 .venv/
 *.pyc
 MODEL_CARD.md
+.DS_Store
