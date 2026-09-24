@@ -1,0 +1,13 @@
+# 데이터 (8GB+, numerapi로 언제든 다시 받을 수 있음)
+data/
+*.parquet
+
+# 비밀 키 — 절대 커밋 금지. GitHub에서는 Secrets로 넣는다.
+.env
+
+# 파이썬 잡동사니
+__pycache__/
+.venv/
+*.pyc
+
+# 주의: model.pkl은 일부러 gitignore하지 않는다. submit.py가 Actions에서 읽어야 하므로 레포에 포함.

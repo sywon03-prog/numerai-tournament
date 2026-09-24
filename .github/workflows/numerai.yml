@@ -1,0 +1,51 @@
+# GitHub Actions — submit.py를 매일 자동 실행
+#
+# 동작: 정해진 시각에 GitHub 서버가 이 저장소를 받아, requirements.txt를 설치하고,
+#       Secrets에 넣어둔 키를 환경변수로 주면서 submit.py를 돌린다.
+# 로그: 저장소 → Actions 탭 → 실행 하나 클릭 → "제출" 단계 펼치면 submit.py 출력이 그대로 보인다.
+
+name: Numerai daily submit
+
+on:
+  schedule:
+    # 분 시 일 월 요일 (UTC). 14:00 UTC = 23:00 KST.
+    # 라운드는 화~토(2-6) 12:00 UTC에 열린다. 일·월엔 라운드가 없어서 돌려봐야 실패만 남는다.
+    # GitHub cron은 붐비면 10~30분 늦게 시작하니, 마감(다음날 12:00 UTC)까지 여유는 충분하다.
+    - cron: "0 14 * * 2-6"
+  # Actions 탭에서 "Run workflow" 버튼으로 수동 실행. 처음 설정 확인할 때 쓴다.
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "예측까지만 하고 제출은 하지 않기"
+        type: boolean
+        default: false
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 저장소 받기 (model.pkl 포함)
+        uses: actions/checkout@v4
+
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"     # model.pkl을 만든 로컬 버전과 맞춘다
+          cache: pip                 # requirements.txt가 안 바뀌면 설치를 캐시에서 복원
+
+      - name: 라이브러리 설치
+        run: pip install -r requirements.txt
+
+      - name: 제출
+        env:
+          # Settings → Secrets and variables → Actions 에 같은 이름으로 등록해야 한다
+          NUMERAI_PUBLIC_ID: ${{ secrets.NUMERAI_PUBLIC_ID }}
+          NUMERAI_SECRET_KEY: ${{ secrets.NUMERAI_SECRET_KEY }}
+          NUMERAI_MODEL_ID: ${{ secrets.NUMERAI_MODEL_ID }}
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            python submit.py --dry-run
+          else
+            python submit.py
+          fi
